@@ -1,0 +1,8 @@
+.reveal .slides .slide-number {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  color: #ffffff; /* Optionally, you can set the color */
+  background-color: #000000; /* Optionally, you can set the background color */
+  padding: 5px 10px; /* Optionally, you can adjust padding */
+}

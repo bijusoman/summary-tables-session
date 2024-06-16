@@ -1,0 +1,339 @@
+---
+title: "Publication Ready Tables"
+author: "Biju Soman"
+institute: "SCTIMST, Trivandrum"
+date: today
+format: 
+  revealjs:
+    slide-number: true
+    scrollable: true
+    logo: sctimst_logo.png
+    css: [default, styles.css, logo.css]
+    code-overflow: wrap
+    highlight-style: a11y
+    # height: 1050
+    # width: 700
+    # height: 1080
+    # width: 1920
+toc: true
+editor_options: 
+  chunk_output_type: console
+embed-resources: true
+---
+
+## Rationale 
+
+-   Often it take lots of time and efforts to format tables in our reports
+
+-   often the script files and outputs are not going together
+
+-   helps us to report results convincingly with the help of `gtsummary` and `reportr` package
+
+    ![](gtsummary_logo.png){alt="gtsummary logo" width="287"}
+
+    https://www.danieldsjoberg.com/gtsummary/
+
+
+## gtsummary package - creating tables
+
+::: {.justify} 
+
+
+The `tbl_summary()` function calculates descriptive statistics for continuous, categorical, and dichotomous variables in R, and presents the results in a beautiful, customizable summary table ready for publication.
+
+:::
+
+[**Illustrative example**]{.orange}: A researcher is interested to know the basic descriptive analysis of the first five variables in `low birth weight` data.
+
+## First step is Data Wrangling
+
+```{r}
+#| echo: true
+#| code-fold: true
+
+library(gtsummary)
+library(tidyverse)
+
+df <- MASS::birthwt
+df <- df |> 
+  mutate(smoke = factor(smoke,
+                        levels = c(0,1),
+                        labels = c("Non Smoker",
+                                   "Smoker"))) |> 
+  mutate(race = factor(race,
+                       levels = c(1,2,3),
+                       labels = c("White",
+                                  "Black",
+                                  "Other"))) |> 
+  mutate(low = factor(low,
+                      levels =  c(0,1),
+                      labels = c("Normal", 
+                                 "Low Birth Weight")))
+  
+```
+
+## Table 1
+
+Let's create a summary table
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+
+df |>  
+  select(low, bwt) |>
+  tbl_summary() 
+
+```
+
+## Stratified tables.
+
+You can stratify your table by a column (e.g. by outcome), creating a 2-way table by using `by =` argument in the `tbl_summary()` function.
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |>  
+  select(smoke, low) |> 
+  tbl_summary(by = low) 
+```
+
+## Customizing output 
+
+::: {.notes}
+Speaker notes go here.
+Use an equations to specify which statistics to show and how to display them. 
+There are two sides to the equation, separated by a tilde `~`. On the right side, in quotes, is the statistical display desired, and on the left are the columns to which that display will apply.
+:::
+
+### If you want to add mean weight
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low) |>
+  tbl_summary(
+    by = low,
+    statistic = bwt ~ "{mean}"
+  ) 
+```
+
+### If you want to add standard deviation too
+
+```{r}
+#| message: false
+#| warning: true
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low) |>
+  tbl_summary(
+    by = low,
+    statistic = bwt~"{mean} ({sd})"
+  ) 
+```
+
+## Changing label of variables
+
+::: {.notes}
+
+Adjust how the column name should be displayed. Provide the column name and its desired label separated by a tilde. The default is the column name. This is done with help of argument `label =` in `tbl_summary` function.
+:::
+
+### Changing label of a single variable
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low) |>
+  tbl_summary(
+    by = low,
+    statistic = bwt~"{mean} ({sd})",
+    label = bwt ~ "Birth Weight"
+  )
+```
+
+### Changing labels of multiple variables.
+
+You can change labels of multiple variables by providing the labels as a `list` to the `label` argument.
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low, smoke) |>
+  tbl_summary(
+    by = low,
+    statistic = bwt~"{mean}, {sd}",
+    label = list(bwt ~ "Birth Weight",
+                 smoke ~ "Smoking history")) 
+
+```
+
+## Multiline output 
+
+::: {.notes}
+
+If you want to print multiple lines of statistics for variables, you can indicate this by setting the `type =` to `“continuous2”`. You can combine all of the previously shown elements in one table by choosing which statistics you want to show. To do this you need to tell the function that you want to get a table back by entering the type as `continuous2`.
+
+:::
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low, smoke) |>
+  tbl_summary(
+    by = low,
+    type = bwt ~ "continuous2",
+    statistic = bwt~c(
+      "{mean} ({sd})",
+      "{median} ({p25}, {p75})"),
+    label = list(bwt ~ "Birth Weight",
+                 smoke ~ "Smoking history")) 
+```
+
+## Multiline output for all continuous variables.
+
+::: {.notes}
+If you wish to print multiline output for all continuous variables, instead of providing "continuous2" argument specified by name of the variable, use `continous()` in `type` and `statistic`arguments.
+
+:::
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low, smoke, lwt) |>
+  tbl_summary(
+    by = low,
+    type = all_continuous() ~ "continuous2",
+    statistic = all_continuous()~c(
+      "{mean}, {sd}",
+      "{median}, ({p25}, {p75})"),
+    label = list(bwt ~ "Birth Weight",
+                 smoke ~ "Smoking history")) 
+```
+
+
+## Multiline output for categorical variables. {.smaller}
+
+The `type` argument in `tbl_summary` function is an optional argument which includes details for the customized outputs according to the type of variables.
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |> 
+  select(bwt, low, smoke) |> 
+  tbl_summary(type = all_continuous() ~ "continuous2", 
+              statistic = list(all_continuous() ~ c(
+                "{mean} ({sd})", 
+                "{median} ({p25}, {p75})"), 
+      all_categorical() ~ "{n} ({p}%)"),   
+      digits = all_continuous() ~ 1) # setting for decimal points
+```
+
+
+
+## Inferential statistics 
+
+Compare the difference in means for a continuous variable in two groups. `add_p()`function from `gtsummary`package adds p-values to `gtsummary` table
+
+**Illustrative example**: `t test`
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+#| code-fold: true
+
+df |>  
+  select(bwt, smoke) |>  
+  tbl_summary(by = smoke) |>  
+  add_p(bwt ~ "t.test") 
+```
+
+
+
+## Statistical tests/ methods available in `add_p()` function.
+
+To find the list of tests available internally within `gtsummary`, type `?gtsummary::tests` in your console. What do you see? There are `tbl_summary()` variants as well as `add_difference` variant. Refer to `gtsummary` vignettes available at <https://cran.r-project.org/web/packages/gtsummary/index.html> for more details.
+
+## Automated Inferential statistics with Publication ready tables
+
+::: {.notes}
+
+**Illustrative example.** A researcher is interested to know whether there is a significant difference in mean birth weight as well as proportion of low birth weight babies among mothers with history of smoking during pregnancy as compared to those without history of smoking during pregnancy.
+
+To answer the question for this study, the summary statistics should be grouped by smoking history group, which can be done by using the `by=` argument. To compare two or more groups, include `add_p()` with the function, which detects variable type and uses an appropriate statistical test.
+:::
+
+```{r}
+#| message: false
+
+df |> 
+  select(smoke, bwt, low) |>  
+  tbl_summary(by = smoke) |>  
+  add_p() 
+```
+
+<!-- ### Hypothesis testing for single mean -->
+
+<!-- **Illustrative example**: A researcher conducted a population based study in XYZ place and found that the mean birth weight of infants is 2500g. Looking at the birth weight dataset, the researcher is curious as to whether the mean birth weight in this data set is similar to XYZ population. In other words, the null hypothesis $H_0: \mu _{bwt} = 2500 g$ -->
+
+<!-- ### Hypothesis testing for single proportion -->
+
+<!-- **Illustrative example**: $H_0: p\_{smoke} = 0.4$ -->
+
+<!-- ### Hypothesis testing: difference between means -->
+
+<!-- **Illustrative example**: -->
+
+<!-- \begin{equation} -->
+
+<!-- H_0: \mu _{bwt-non-smoke} = \mu _{bwt-smoke}  -->
+
+<!-- \end{equation} -->
+
+<!-- ### Test of independence: Chi square test -->
+
+<!-- **Illustrative example**:  -->
+
+<!-- \begin{equation} -->
+
+<!-- H_0: p _{low-non-smoke} = p _{low-smoke}  -->
+
+<!-- \end{equation} -->
+
+<!-- ### Correlations -->
+
+<!-- **Illustrative example**: Correlation between maternal weight before pregnancy and infant birth weight -->
+
+# Thank You!
